@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Trading Journal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .three-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #667eea;
+            margin: 30px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .screenshot-upload {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .screenshot-item {
+            position: relative;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            background: white;
+            text-align: center;
+        }
+
+        .screenshot-item img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .screenshot-item .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            font-weight: bold;
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .pdf-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .pdf-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+
+        .pdf-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+            .three-col {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Daily Trading Journal</h1>
+        
+        <form id="tradingForm">
+            <div class="row">
+                <div class="form-group">
+                    <label for="day">DAY:</label>
+                    <input type="text" id="day" name="day" placeholder="Enter day">
+                </div>
+                <div class="form-group">
+                    <label for="instrument">Instrument:</label>
+                    <input type="text" id="instrument" name="instrument" placeholder="Enter instrument">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date">
+            </div>
+
+            <div class="section-title">Morning Checklist</div>
+            <div class="form-group">
+                <label for="calendar">Calendar:</label>
+                <textarea id="calendar" name="calendar" placeholder="Calendar events and economic data"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="dbrief">D.Brief:</label>
+                <textarea id="dbrief" name="dbrief" placeholder="Daily brief"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="keyLevels">Key Levels:</label>
+                <textarea id="keyLevels" name="keyLevels" placeholder="Support and resistance levels"></textarea>
+            </div>
+
+            <div class="section-title">Entry Criteria</div>
+            <div class="form-group">
+                <label for="clearLTFBias">CLEAR LTF BIAS:</label>
+                <textarea id="clearLTFBias" name="clearLTFBias" placeholder="Lower timeframe bias"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="dollarRaid">$ RAID:</label>
+                <textarea id="dollarRaid" name="dollarRaid" placeholder="Dollar raid details"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="pdArrPoi">PD ARR POI:</label>
+                <textarea id="pdArrPoi" name="pdArrPoi" placeholder="Previous day array point of interest"></textarea>
+            </div>
+
+            <div class="section-title">Confirmation & Execution</div>
+            <div class="form-group">
+                <label for="validTestSL">Valid Test/SL:</label>
+                <textarea id="validTestSL" name="validTestSL" placeholder="Valid test and stop loss"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="killZoneWindow">'Kill Zone' Window:</label>
+                <textarea id="killZoneWindow" name="killZoneWindow" placeholder="Kill zone timing window"></textarea>
+            </div>
+
+            <div class="section-title">Exit Criteria</div>
+            <div class="form-group">
+                <label for="opposingExit">Opposing $ / Time Based Exit:</label>
+                <textarea id="opposingExit" name="opposingExit" placeholder="Exit criteria details"></textarea>
+            </div>
+
+            <div class="row">
+                <div class="form-group">
+                    <label for="whySL">WHY SL:</label>
+                    <textarea id="whySL" name="whySL" placeholder="Stop loss reasoning"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="whyTP">WHY TP:</label>
+                    <textarea id="whyTP" name="whyTP" placeholder="Take profit reasoning"></textarea>
+                </div>
+            </div>
+
+            <div class="section-title">Results</div>
+            <div class="three-col">
+                <div class="form-group">
+                    <label for="pipsPoints">Pips/Points:</label>
+                    <input type="number" id="pipsPoints" name="pipsPoints" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label for="rr">R/R:</label>
+                    <input type="number" id="rr" name="rr" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="realizedRR">Realized R/R:</label>
+                    <input type="number" id="realizedRR" name="realizedRR" step="0.01" placeholder="0.00">
+                </div>
+            </div>
+
+            <div class="three-col">
+                <div class="form-group">
+                    <label for="t1">T-1:</label>
+                    <input type="number" id="t1" name="t1" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="t2">T-2:</label>
+                    <input type="number" id="t2" name="t2" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="t3">T-3:</label>
+                    <input type="number" id="t3" name="t3" step="0.01" placeholder="0.00">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="totalPL">Total P&L:</label>
+                <input type="number" id="totalPL" name="totalPL" step="0.01" placeholder="0.00">
+            </div>
+
+            <div class="section-title">Screenshots</div>
+            <div class="screenshot-upload">
+                <p style="margin-bottom: 15px; font-size: 1.1rem; color: #555;">Upload up to 10 screenshots of your trades</p>
+                <label for="screenshots" class="file-label">Choose Screenshots</label>
+                <input type="file" id="screenshots" class="file-input" accept="image/*" multiple>
+                <div class="screenshot-grid" id="screenshotGrid"></div>
+            </div>
+
+            <div class="section-title">Conclusions</div>
+            <div class="form-group">
+                <label for="mistakes">Mistakes I Made:</label>
+                <textarea id="mistakes" name="mistakes" placeholder="What mistakes did you make?"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="wellDid">Well Did:</label>
+                <textarea id="wellDid" name="wellDid" placeholder="What did you do well?"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="improvement">Improvement:</label>
+                <textarea id="improvement" name="improvement" placeholder="Areas for improvement"></textarea>
+            </div>
+
+            <button type="button" class="pdf-btn" onclick="generatePDF()">PDF Banadu Bol</button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 20px; padding: 15px; color: #666; font-style: italic;">
+            Made by Keshav
+        </div>
+    </div>
+
+    <script>
+        let uploadedScreenshots = [];
+
+        document.getElementById('screenshots').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            if (uploadedScreenshots.length + files.length > 10) {
+                alert('Maximum 10 screenshots allowed!');
+                return;
+            }
+
+            files.forEach(file => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        uploadedScreenshots.push({
+                            name: file.name,
+                            data: e.target.result
+                        });
+                        displayScreenshots();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        function displayScreenshots() {
+            const grid = document.getElementById('screenshotGrid');
+            grid.innerHTML = '';
+
+            uploadedScreenshots.forEach((screenshot, index) => {
+                const item = document.createElement('div');
+                item.className = 'screenshot-item';
+                item.innerHTML = `
+                    <img src="${screenshot.data}" alt="${screenshot.name}">
+                    <button type="button" class="remove-btn" onclick="removeScreenshot(${index})">×</button>
+                    <p style="font-size: 12px; margin-top: 5px;">${screenshot.name}</p>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        function removeScreenshot(index) {
+            uploadedScreenshots.splice(index, 1);
+            displayScreenshots();
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            let yPosition = 20;
+
+            // Title
+            doc.setFontSize(20);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Daily Trading Journal', 105, yPosition, { align: 'center' });
+            yPosition += 20;
+
+            // Helper function to add text with wrapping
+            function addWrappedText(label, value, fontSize = 10) {
+                if (yPosition > 270) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                
+                doc.setFontSize(fontSize);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`${label}: ${value || 'N/A'}`, 20, yPosition);
+                yPosition += fontSize === 12 ? 12 : 8;
+            }
+
+            // Helper function for section headers
+            function addSectionHeader(title) {
+                if (yPosition > 260) {
+                    doc.addPage();
+                    yPosition = 20;
+                }
+                yPosition += 5;
+                doc.setFontSize(12);
+                doc.setTextColor(102, 126, 234);
+                doc.text(title, 20, yPosition);
+                yPosition += 10;
+            }
+
+            // Get all form values
+            const formData = new FormData(document.getElementById('tradingForm'));
+            const data = Object.fromEntries(formData);
+
+            // Basic Info
+            addWrappedText('Day', data.day);
+            addWrappedText('Instrument', data.instrument);
+            addWrappedText('Date', data.date);
+
+            // Morning Checklist
+            addSectionHeader('Morning Checklist');
+            addWrappedText('Calendar', data.calendar);
+            addWrappedText('D.Brief', data.dbrief);
+            addWrappedText('Key Levels', data.keyLevels);
+
+            // Entry Criteria
+            addSectionHeader('Entry Criteria');
+            addWrappedText('Clear LTF Bias', data.clearLTFBias);
+            addWrappedText('$ Raid', data.dollarRaid);
+            addWrappedText('PD ARR POI', data.pdArrPoi);
+
+            // Confirmation & Execution
+            addSectionHeader('Confirmation & Execution');
+            addWrappedText('Valid Test/SL', data.validTestSL);
+            addWrappedText('Kill Zone Window', data.killZoneWindow);
+
+            // Exit Criteria
+            addSectionHeader('Exit Criteria');
+            addWrappedText('Opposing $ / Time Based Exit', data.opposingExit);
+            addWrappedText('Why SL', data.whySL);
+            addWrappedText('Why TP', data.whyTP);
+
+            // Results
+            addSectionHeader('Results');
+            addWrappedText('Pips/Points', data.pipsPoints);
+            addWrappedText('R/R', data.rr);
+            addWrappedText('Realized R/R', data.realizedRR);
+            addWrappedText('T-1', data.t1);
+            addWrappedText('T-2', data.t2);
+            addWrappedText('T-3', data.t3);
+            addWrappedText('Total P&L', data.totalPL);
+
+            // Conclusions
+            addSectionHeader('Conclusions');
+            addWrappedText('Mistakes I Made', data.mistakes);
+            addWrappedText('Well Did', data.wellDid);
+            addWrappedText('Improvement', data.improvement);
+
+            // Screenshots
+            if (uploadedScreenshots.length > 0) {
+                addSectionHeader('Screenshots');
+                
+                uploadedScreenshots.forEach((screenshot, index) => {
+                    if (yPosition > 180) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    
+                    try {
+                        // Add screenshot title
+                        doc.setFontSize(10);
+                        doc.setTextColor(0, 0, 0);
+                        doc.text(`Screenshot ${index + 1}:`, 20, yPosition);
+                        yPosition += 6;
+                        
+                        // Add filename in smaller text
+                        doc.setFontSize(8);
+                        doc.setTextColor(102, 102, 102);
+                        doc.text(screenshot.name, 20, yPosition);
+                        yPosition += 10;
+                        
+                        // Add the image
+                        doc.addImage(screenshot.data, 'JPEG', 20, yPosition, 100, 75);
+                        yPosition += 85;
+                    } catch (error) {
+                        console.error('Error adding image:', error);
+                        doc.setFontSize(10);
+                        doc.setTextColor(255, 0, 0);
+                        doc.text(`Screenshot ${index + 1}: ${screenshot.name} (Could not embed)`, 20, yPosition);
+                        yPosition += 8;
+                    }
+                });
+            }
+
+            // Save the PDF
+            const fileName = `Trading_Journal_${data.date || new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+        }
+
+        // Set today's date as default
+        document.getElementById('date').valueAsDate = new Date();
+    </script>
+</body>
+</html>
